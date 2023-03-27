@@ -1,0 +1,320 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Configuration;
+using System.Data.SqlClient;
+using System.IO;
+using System.Runtime.InteropServices;
+using Excel = Microsoft.Office.Interop.Excel;
+namespace РекламнеАгенствоМаксимов
+{
+    public partial class Form2 : Form
+    {
+        SqlConnection connection = new SqlConnection();
+
+        DataTable dataTable = new DataTable();
+
+        Query query;
+
+        Excel.Application ex;
+
+
+        string conString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\Windows\source\repos\РекламнеАгенствоМаксимов\АгествоМаксимов.mdf;Integrated Security=True";
+        public Form2()
+        {
+            InitializeComponent();
+            connection = new SqlConnection(conString);
+            query = new Query(conString);
+        }
+        public void UpdateDataGridView(string query, DataGridView dataGridView)
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter(query, connection);
+            dataTable.Clear();
+            adapter.Fill(dataTable);
+            dataGridView.DataSource = dataTable;
+        }
+        private void Form2_Load(object sender, EventArgs e)
+        {
+            // TODO: данная строка кода позволяет загрузить данные в таблицу "агествоМаксимовDataSet2.Обслуговування". При необходимости она может быть перемещена или удалена.
+            this.обслуговуванняTableAdapter2.Fill(this.агествоМаксимовDataSet2.Обслуговування);
+            // TODO: данная строка кода позволяет загрузить данные в таблицу "агествоМаксимовDataSet2.Рекламні_агенти". При необходимости она может быть перемещена или удалена.
+            this.рекламні_агентиTableAdapter2.Fill(this.агествоМаксимовDataSet2.Рекламні_агенти);
+            // TODO: данная строка кода позволяет загрузить данные в таблицу "агествоМаксимовDataSet2.Рекламодавці". При необходимости она может быть перемещена или удалена.
+            this.рекламодавціTableAdapter2.Fill(this.агествоМаксимовDataSet2.Рекламодавці);
+            // TODO: данная строка кода позволяет загрузить данные в таблицу "агествоМаксимовDataSet2.Види_рекламних_послуг". При необходимости она может быть перемещена или удалена.
+            this.види_рекламних_послугTableAdapter2.Fill(this.агествоМаксимовDataSet2.Види_рекламних_послуг);
+
+            try
+            {
+                connection.Open();
+            }
+            catch (SqlException ex)
+            {
+                MessageBox.Show(ex.Message, "Помилка підключення", MessageBoxButtons.OK);
+                Environment.Exit(0);
+            }
+        }
+
+        public void SelectTab(int index)
+        {
+            tabControl1.SelectTab(index);
+        }
+
+        private void add1_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                query.AddVidiReklam(namePosluga.Text, decimal.Parse(price.Text));
+                MessageBox.Show("Дані додані");
+                UpdateDataGridView("SELECT * FROM Види_рекламних_послуг", tablePoslugi);
+                namePosluga.Text = null;
+                price.Text = null;
+            }                       
+            catch (SqlException ex)
+            {
+                MessageBox.Show(ex.Message, "Помилка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+               Environment.Exit(0);
+            }
+        }  
+        private void tablePoslugi_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            try
+            {
+                int kod = int.Parse(tablePoslugi.Rows[tablePoslugi.CurrentRow.Index].Cells[0].Value.ToString());
+                if ((((DataGridView)sender).Rows[e.RowIndex].Cells[e.ColumnIndex] as DataGridViewButtonCell) != null)
+                {
+                    if (tablePoslugi.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString() == "Видалити")
+                    {
+                        if (MessageBox.Show("Видалити цей рядок?", "Видалення",
+                            MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                            == DialogResult.Yes)
+                        {
+                            query.DeletePoslugu(kod);
+                            MessageBox.Show("Данні видалені");
+                            UpdateDataGridView("SELECT * FROM Види_рекламних_послуг", tablePoslugi);
+                        }
+                    }
+                    else if (tablePoslugi.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString() == "Редагувати")
+                    {
+                        query.UpdateVidiReklam(kod, tablePoslugi.Rows[tablePoslugi.CurrentRow.Index].Cells[1].Value.ToString());
+                        MessageBox.Show("Данні оновлені");
+                        UpdateDataGridView("SELECT * FROM Види_рекламних_послуг", tablePoslugi);
+                    }
+                }
+            }
+            catch (SqlException ex)
+            {
+                MessageBox.Show(ex.Message, "Помилка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.Exit(0);
+            }
+        }
+       
+        private void add2_Click(object sender, EventArgs e)
+        {
+
+                query.AddReklamodava(nameDava.Text,telDava.Text,mailDava.Text,parametri.Text);
+                MessageBox.Show("Дані додані");
+                UpdateDataGridView("SELECT * FROM Рекламодавці", tableReklamdav);
+                nameDava.Text = null;
+                telDava.Text = null;
+                mailDava.Text = null;
+                parametri.Text = null;         
+        }
+        private void tableReklamdav_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            try
+            {
+                int kod = int.Parse(tableReklamdav.Rows[tableReklamdav.CurrentRow.Index].Cells[0].Value.ToString());
+                if ((((DataGridView)sender).Rows[e.RowIndex].Cells[e.ColumnIndex] as DataGridViewButtonCell) != null)
+                {
+                    if (tableReklamdav.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString() == "Видалити")
+                    {
+                        if (MessageBox.Show("Видалити цей рядок?", "Видалення",
+                            MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                            == DialogResult.Yes)
+                        {
+                            query.DeleteReklamodava(kod);
+                            MessageBox.Show("Данні видалені");
+                            UpdateDataGridView("SELECT * FROM Рекламодавці", tableReklamdav);
+                        }
+                    }
+                    else if (tableReklamdav.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString() == "Редагувати")
+                    {
+                        query.UpdateReklamodava(kod, tableReklamdav.Rows[tableReklamdav.CurrentRow.Index].Cells[1].Value.ToString(),
+                            tableReklamdav.Rows[tableReklamdav.CurrentRow.Index].Cells[2].Value.ToString(),
+                            tableReklamdav.Rows[tableReklamdav.CurrentRow.Index].Cells[3].Value.ToString(),
+                            tableReklamdav.Rows[tableReklamdav.CurrentRow.Index].Cells[4].Value.ToString());
+                        MessageBox.Show("Данні оновлені");
+                        UpdateDataGridView("SELECT * FROM Рекламодавці", tableReklamdav);
+                    }
+                }
+            }
+            catch (SqlException ex)
+            {
+                MessageBox.Show(ex.Message, "Помилка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.Exit(0);
+            }
+        }
+
+        private void add3_Click(object sender, EventArgs e)
+        {          
+            try
+            {
+                query.AddRekAg(nameAg.Text, telAg.Text, mailAg.Text);
+                MessageBox.Show("Дані додані");
+                UpdateDataGridView("SELECT * FROM Рекламні_агенти", tableAgent);
+                nameAg.Text = null;
+                telAg.Text = null;
+                mailAg.Text = null;
+            }
+            catch (SqlException ex)
+            {
+                MessageBox.Show(ex.Message, "Помилка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.Exit(0);
+            }
+        }
+
+        private void tableAgent_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            int kod = int.Parse(tableAgent.Rows[tableAgent.CurrentRow.Index].Cells[0].Value.ToString());
+            if ((((DataGridView)sender).Rows[e.RowIndex].Cells[e.ColumnIndex] as DataGridViewButtonCell) != null)
+            {
+                if (tableAgent.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString() == "Видалити")
+                {
+                    if (MessageBox.Show("Видалити цей рядок?", "Видалення",
+                        MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                        == DialogResult.Yes)
+                    {
+                        query.DeleteRekAg(kod);
+                        MessageBox.Show("Данні видалені");
+                        UpdateDataGridView("SELECT * FROM Рекламні_агенти", tableAgent);
+                    }
+                }
+                else if (tableAgent.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString() == "Редагувати")
+                {
+                    query.UpdateRekAg(kod, tableAgent.Rows[tableAgent.CurrentRow.Index].Cells[1].Value.ToString(),
+                       tableAgent.Rows[tableAgent.CurrentRow.Index].Cells[2].Value.ToString(),
+                        tableAgent.Rows[tableAgent.CurrentRow.Index].Cells[3].Value.ToString());
+                    MessageBox.Show("Данні оновлені");
+                    UpdateDataGridView("SELECT * FROM Рекламні_агенти", tableAgent);
+                }
+            }
+        }
+
+        private void add4_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                query.AddObslugovuvanya(int.Parse(kodR.Text), int.Parse(kodA.Text), int.Parse(kodP.Text), Convert.ToDateTime(date.Text));
+                MessageBox.Show("Дані додані");
+                UpdateDataGridView("SELECT * FROM Обслуговування", tableObslug);
+                kodR.Text = null;
+                kodA.Text = null;
+                kodP.Text = null;
+                date.Text = null;
+            }
+            catch (SqlException ex)
+            {
+                MessageBox.Show(ex.Message, "Помилка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.Exit(0);
+            }
+        }
+
+        private void tableObslug_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            int kod = int.Parse(tableObslug.Rows[tableObslug.CurrentRow.Index].Cells[0].Value.ToString());
+            if ((((DataGridView)sender).Rows[e.RowIndex].Cells[e.ColumnIndex] as DataGridViewButtonCell) != null)
+            {
+                if (tableObslug.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString() == "Видалити")
+                {
+                    if (MessageBox.Show("Видалити цей рядок?", "Видалення",
+                        MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                        == DialogResult.Yes)
+                    {
+                        query.DeleteObslugu(kod);
+                        MessageBox.Show("Данні видалені");
+                        UpdateDataGridView("SELECT * FROM Обслуговування", tableObslug);
+                    }                   
+                }
+                else if (tableObslug.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString() == "Редагувати")
+                {
+                    query.UpdateObslugovuvanya(kod, int.Parse(tableObslug.Rows[tableObslug.CurrentRow.Index].Cells[1].Value.ToString()),
+                       int.Parse(tableObslug.Rows[tableObslug.CurrentRow.Index].Cells[2].Value.ToString()),
+                        int.Parse(tableObslug.Rows[tableObslug.CurrentRow.Index].Cells[3].Value.ToString()),
+                        Convert.ToDateTime(tableObslug.Rows[tableObslug.CurrentRow.Index].Cells[4].Value.ToString()));
+                    MessageBox.Show("Данні оновлені");
+                    UpdateDataGridView("SELECT * FROM Обслуговування", tableObslug);
+                }
+            }
+        }
+        public void Export(DataGridView table)
+        {
+            try
+            {
+                ex = Marshal.GetActiveObject("Excel.Application") as Excel.Application;
+            }
+            catch (COMException err)
+            {
+                MessageBox.Show(err.Message, "Помилка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ex = new Excel.Application();
+            }
+            object fileName = Application.StartupPath + "\\temp\\table.xlsx";
+            Excel.Workbook workbook = ex.Workbooks.Add(fileName);
+            Excel.Worksheet worksheet = workbook.ActiveSheet;
+            for (int i = 1; i <= table.Columns.Count - 2; i++)
+            {
+                worksheet.Cells[1, i] = table.Columns[i - 1].HeaderText;
+            }
+            for (int i = 0; i < table.Rows.Count; i++)
+            {
+                for (int j = 0; j < table.Columns.Count - 2; j++)
+                {
+                    if (table.Rows[i].Cells[j] != null)
+                    {
+                        if (table.Rows[i].Cells[j] is DateTime)
+                        {
+                            DateTime dateValue = (DateTime)table.Rows[i].Cells[j].Value;
+                            worksheet.Cells[i + 2, j + 1] = dateValue;
+                        }
+                        else
+                        {
+                            worksheet.Cells[i + 2, j + 1] = table.Rows[i].Cells[j].Value;
+                        }
+                    }
+                    else
+                    {                     
+                        worksheet.Cells[i + 2, j + 1] = "";
+                    }
+                    
+                }
+            }
+            ex.Visible = true;
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            Export(tablePoslugi);
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            Export(tableReklamdav);
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            Export(tableAgent);
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            Export(tableObslug);
+        }
+    }
+}
